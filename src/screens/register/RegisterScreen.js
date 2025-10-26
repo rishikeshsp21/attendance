@@ -24,27 +24,38 @@ const RegisterScreen = ({ navigation }) => {
   const [showSignOutPicker, setShowSignOutPicker] = useState(false);
 
   const handleRegister = async () => {
-    if (!employeeId || !name || !designation || !role) {
-      Alert.alert('Missing Info', 'Please fill all required fields.');
-      return;
-    }
+  if (!employeeId || !name || !designation || !role) {
+    Alert.alert('Missing Info', 'Please fill all required fields.');
+    return;
+  }
 
-    try {
-      await executeQuery(
-        `INSERT INTO employees (employee_id, name, designation, role, default_sign_in_time, default_sign_out_time)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [employeeId, name, designation, role, signInTime, signOutTime]
+  try {
+    await executeQuery(
+      `INSERT INTO employees (employee_id, name, designation, role, default_sign_in_time, default_sign_out_time)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [employeeId, name, designation, role, signInTime, signOutTime]
+    );
+    Alert.alert('Success', `${name} has been registered successfully!`);
+    navigation.navigate('Login');
+  } catch (error) {
+    console.error('Registration Error:', error);
+
+    // Handle unique constraint violation
+    if (
+      error.message &&
+      (error.message.includes('UNIQUE constraint failed') ||
+        error.message.includes('constraint failed'))
+    ) {
+      Alert.alert(
+        'Duplicate Employee ID',
+        'An employee with this ID already exists. Please use a different ID.'
       );
-
-      
-
-      Alert.alert('Success', `${name} has been registered successfully!`);
-      navigation.navigate('Login');
-    } catch (error) {
-      console.error('Registration Error:', error);
-      Alert.alert('Error', 'Failed to register employee.');
+    } else {
+      Alert.alert('Error', 'Failed to register employee. Please try again.');
     }
-  };
+  }
+};
+
 
   // Format time as HH:MM (24-hour)
   const formatTime = (date) => {

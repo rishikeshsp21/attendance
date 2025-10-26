@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
+import { executeQuery } from '../../database/attendanceDB';
 
 const LoginScreen = ({ navigation }: any) => {
   const [employeeId, setEmployeeId] = useState('');
@@ -27,6 +28,7 @@ const LoginScreen = ({ navigation }: any) => {
       ? `Welcome, ${employeeId}.`
       : 'You have been signed out.'
     );
+    setEmployeeId('');
   };
 
   return (
