@@ -36,14 +36,14 @@ const LoginScreen = ({ navigation }: any) => {
       const currentDate = new Date().toISOString().split('T')[0];
       const currentTime = new Date().toLocaleTimeString();
 
-      // 2️⃣ Check if an entry for this date already exists
+      // 2️⃣ Check for today's record
       const existingReport = await executeQuery(
         'SELECT * FROM daily_reports WHERE employee_id = ? AND date = ?',
         [employeeId, currentDate]
       );
 
-      if (!signedIn && existingReport.rows.length === 0) {
-        // 3️⃣ Sign-in logic: create a new row
+      // 🌟 CASE 1: No record → Sign in normally
+      if (existingReport.rows.length === 0) {
         await executeQuery(
           `INSERT INTO daily_reports 
            (employee_id, name, default_sign_in_time, actual_sign_in_time, 
@@ -65,12 +65,74 @@ const LoginScreen = ({ navigation }: any) => {
 
         setSignedIn(true);
         Alert.alert('Signed In', `Welcome, ${employee.name}!`);
-      } else if (signedIn && existingReport.rows.length > 0) {
-        // 4️⃣ Sign-out logic: update existing row
-        const report = existingReport.rows.item(0);
+        setEmployeeId('');
+        return;
+      }
+
+      const report = existingReport.rows.item(0);
+      const hasSignedIn = !!report.actual_sign_in_time;
+      const hasSignedOut = !!report.actual_sign_out_time;
+
+      // 🌟 CASE 2: Manager/Supervisor special flow
+      if (employee.role === 'Manager' || employee.role === 'Supervisor') {
+        if (hasSignedIn && !hasSignedOut) {
+          // Signed in but not signed out → ask Sign Out / View Dashboard
+          Alert.alert(
+            'Already Signed In',
+            'Would you like to:',
+            [
+              {
+                text: 'Sign Out',
+                onPress: async () => {
+                  const signInTime = new Date(`${currentDate}T${report.actual_sign_in_time}`);
+                  const signOutTime = new Date(`${currentDate}T${currentTime}`);
+                  const hoursWorked =
+                    (signOutTime.getTime() - signInTime.getTime()) / (1000 * 60 * 60);
+                  const overtime = Math.max(0, hoursWorked - 8);
+
+                  await executeQuery(
+                    `UPDATE daily_reports
+                     SET actual_sign_out_time = ?, daily_hours_worked = ?, overtime_hours = ?
+                     WHERE employee_id = ? AND date = ?`,
+                    [currentTime, hoursWorked.toFixed(2), overtime.toFixed(2), employeeId, currentDate]
+                  );
+
+                  setSignedIn(false);
+                  Alert.alert('Signed Out', `You have signed out successfully ${employee.name}`);
+                },
+              },
+              {
+                text: 'View Dashboard',
+                onPress: () => navigation.navigate('Dashboard'),
+              },
+              { text: 'Cancel', style: 'cancel' },
+            ],
+            { cancelable: true }
+          );
+          return;
+        }
+
+        if (hasSignedOut) {
+          // Signed out already → ask View Dashboard / Cancel
+          Alert.alert(
+            'Signed Out',
+            'You have signed out. Would you like to view dashboard?',
+            [
+              { text: 'Yes', onPress: () => navigation.navigate('Dashboard') },
+              { text: 'No', style: 'cancel' },
+            ],
+            { cancelable: true }
+          );
+          setEmployeeId('');
+          return;
+        }
+      }
+
+      // 🌟 CASE 3: Regular employee or fallback logic
+      if (hasSignedIn && !hasSignedOut) {
+        // Normal sign-out
         const signInTime = new Date(`${currentDate}T${report.actual_sign_in_time}`);
         const signOutTime = new Date(`${currentDate}T${currentTime}`);
-
         const hoursWorked =
           (signOutTime.getTime() - signInTime.getTime()) / (1000 * 60 * 60);
         const overtime = Math.max(0, hoursWorked - 8);
@@ -84,6 +146,8 @@ const LoginScreen = ({ navigation }: any) => {
 
         setSignedIn(false);
         Alert.alert('Signed Out', 'You have been signed out successfully.');
+      } else if (hasSignedOut) {
+        Alert.alert('Already Signed Out', 'You have already signed out for today.');
       } else {
         Alert.alert(
           'Already Signed In',
