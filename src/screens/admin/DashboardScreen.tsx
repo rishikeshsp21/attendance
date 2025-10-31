@@ -8,7 +8,7 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { executeQuery } from '../../database/attendanceDB';
 
 type ViewKey = 'employees' | 'daily' | 'payroll';
 
@@ -44,20 +44,39 @@ const ReportsScreen = () => {
   const [payroll, setPayroll] = useState<PayrollRecord[]>([]);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const e = await AsyncStorage.getItem('employees');
-        const d = await AsyncStorage.getItem('dailyReports');
-        const p = await AsyncStorage.getItem('payroll');
-        if (e) setEmployees(JSON.parse(e));
-        if (d) setDaily(JSON.parse(d));
-        if (p) setPayroll(JSON.parse(p));
-      } catch (err) {
-        console.error('Error loading data:', err);
+  const loadData = async () => {
+    try {
+      // Fetch data from SQLite tables
+      const e = await executeQuery('SELECT * FROM employees');
+      const d = await executeQuery('SELECT * FROM daily_reports');
+      const p = await executeQuery('SELECT * FROM payroll');
+
+      // Extract rows from query results
+      const employeesData = [];
+      const dailyData = [];
+      const payrollData = [];
+
+      for (let i = 0; i < e.rows.length; i++) {
+        employeesData.push(e.rows.item(i));
       }
-    };
-    loadData();
-  }, []);
+      for (let i = 0; i < d.rows.length; i++) {
+        dailyData.push(d.rows.item(i));
+      }
+      for (let i = 0; i < p.rows.length; i++) {
+        payrollData.push(p.rows.item(i));
+      }
+
+      // Update state
+      setEmployees(employeesData);
+      setDaily(dailyData);
+      setPayroll(payrollData);
+    } catch (err) {
+      console.error('Error loading data from SQLite:', err);
+    }
+  };
+
+  loadData();
+}, []);
 
   const rows = useMemo(() => {
     if (view === 'employees') return employees;
