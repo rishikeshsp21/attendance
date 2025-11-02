@@ -84,22 +84,48 @@ const LoginScreen = ({ navigation }: any) => {
               {
                 text: 'Sign Out',
                 onPress: async () => {
-                  const signInTime = new Date(`${currentDate}T${report.actual_sign_in_time}`);
-                  const signOutTime = new Date(`${currentDate}T${currentTime}`);
-                  const hoursWorked =
-                    (signOutTime.getTime() - signInTime.getTime()) / (1000 * 60 * 60);
-                  const overtime = Math.max(0, hoursWorked - 8);
+                try {
+                  const signInRaw = report.actual_sign_in_time;
+                  const signOutRaw = currentTime;
+
+                  let hoursWorked = 0;
+                  let overtime = 0;
+
+                  if (signInRaw && signOutRaw) {
+                    const signInTime = new Date(`${currentDate}T${signInRaw}`);
+                    const signOutTime = new Date(`${currentDate}T${signOutRaw}`);
+
+                    if (
+                      !isNaN(signInTime.getTime()) &&
+                      !isNaN(signOutTime.getTime()) &&
+                      signOutTime > signInTime
+                    ) {
+                      const diffMs = signOutTime.getTime() - signInTime.getTime();
+                      const diffHours = diffMs / (1000 * 60 * 60);
+                      hoursWorked = Number(diffHours.toFixed(2));
+                      overtime = Number(Math.max(0, diffHours - 8).toFixed(2));
+                    }
+                  }
+
+                  // ✅ Guarantee numeric values before DB write
+                  hoursWorked = Number.isFinite(hoursWorked) ? hoursWorked : 0;
+                  overtime = Number.isFinite(overtime) ? overtime : 0;
 
                   await executeQuery(
                     `UPDATE daily_reports
-                     SET actual_sign_out_time = ?, daily_hours_worked = ?, overtime_hours = ?
-                     WHERE employee_id = ? AND date = ?`,
-                    [currentTime, hoursWorked.toFixed(2), overtime.toFixed(2), employeeId, currentDate]
+                    SET actual_sign_out_time = ?, daily_hours_worked = ?, overtime_hours = ?
+                    WHERE employee_id = ? AND date = ?`,
+                    [signOutRaw, hoursWorked, overtime, employeeId, currentDate]
                   );
 
                   setSignedIn(false);
-                  Alert.alert('Signed Out', `You have signed out successfully ${employee.name}`);
-                },
+                  Alert.alert('Signed Out', `You have signed out successfully, ${employee.name}`);
+                } catch (err) {
+                  console.error('Sign-out error:', err);
+                  Alert.alert('Error', 'Something went wrong during sign out.');
+                }
+              },
+
               },
               {
                 text: 'View Dashboard',
@@ -130,22 +156,47 @@ const LoginScreen = ({ navigation }: any) => {
 
       // 🌟 CASE 3: Regular employee or fallback logic
       if (hasSignedIn && !hasSignedOut) {
-        // Normal sign-out
-        const signInTime = new Date(`${currentDate}T${report.actual_sign_in_time}`);
-        const signOutTime = new Date(`${currentDate}T${currentTime}`);
-        const hoursWorked =
-          (signOutTime.getTime() - signInTime.getTime()) / (1000 * 60 * 60);
-        const overtime = Math.max(0, hoursWorked - 8);
+        try {
+          const signInRaw = report.actual_sign_in_time;
+          const signOutRaw = currentTime;
 
-        await executeQuery(
-          `UPDATE daily_reports
-           SET actual_sign_out_time = ?, daily_hours_worked = ?, overtime_hours = ?
-           WHERE employee_id = ? AND date = ?`,
-          [currentTime, hoursWorked.toFixed(2), overtime.toFixed(2), employeeId, currentDate]
-        );
+          let hoursWorked = 0;
+          let overtime = 0;
 
-        setSignedIn(false);
-        Alert.alert('Signed Out', 'You have been signed out successfully.');
+          if (signInRaw && signOutRaw) {
+            const signInTime = new Date(`${currentDate}T${signInRaw}`);
+            const signOutTime = new Date(`${currentDate}T${signOutRaw}`);
+
+            // Validate both timestamps
+            if (
+              !isNaN(signInTime.getTime()) &&
+              !isNaN(signOutTime.getTime()) &&
+              signOutTime > signInTime
+            ) {
+              const diffMs = signOutTime.getTime() - signInTime.getTime();
+              const diffHours = diffMs / (1000 * 60 * 60);
+              hoursWorked = Number(diffHours.toFixed(2));
+              overtime = Number(Math.max(0, diffHours - 8).toFixed(2));
+            }
+          }
+
+          // ✅ Final safeguard
+          hoursWorked = Number.isFinite(hoursWorked) ? hoursWorked : 0;
+          overtime = Number.isFinite(overtime) ? overtime : 0;
+
+          await executeQuery(
+            `UPDATE daily_reports
+            SET actual_sign_out_time = ?, daily_hours_worked = ?, overtime_hours = ?
+            WHERE employee_id = ? AND date = ?`,
+            [signOutRaw, hoursWorked, overtime, employeeId, currentDate]
+          );
+
+          setSignedIn(false);
+          Alert.alert('Signed Out', 'You have been signed out successfully.');
+        } catch (err) {
+          console.error('Sign-out error:', err);
+          Alert.alert('Error', 'Something went wrong during sign out.');
+        }
       } else if (hasSignedOut) {
         Alert.alert('Already Signed Out', 'You have already signed out for today.');
       } else {
@@ -154,8 +205,7 @@ const LoginScreen = ({ navigation }: any) => {
           'You have already signed in today. Please sign out before signing in again.'
         );
       }
-
-      setEmployeeId('');
+    setEmployeeId('');
     } catch (error) {
       console.error('Sign In/Out Error:', error);
       Alert.alert('Error', 'An error occurred during sign-in/out.');

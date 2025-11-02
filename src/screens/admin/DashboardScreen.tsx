@@ -120,14 +120,28 @@ const ReportsScreen = () => {
       ? 'Daily Report'
       : 'Payroll';
 
-const onExport = async (rows: any[]) => {
+const onExport = async (rows: any[], view: string) => {
   try {
     if (!rows || rows.length === 0) {
       Alert.alert('No Data', 'There are no records to export.');
       return;
     }
 
-    // 1️⃣ Ensure export folder exists
+    // 1️⃣ Determine file name based on current view
+    let baseName = 'report';
+    switch (view) {
+      case 'employees':
+        baseName = 'employee_records';
+        break;
+      case 'daily':
+        baseName = 'daily_report';
+        break;
+      case 'payroll':
+        baseName = 'payroll_report';
+        break;
+    }
+
+    // 2️⃣ Ensure export folder exists
     const exportDir =
       Platform.OS === 'android'
         ? `${RNFS.DownloadDirectoryPath}/AttendanceApp`
@@ -136,28 +150,33 @@ const onExport = async (rows: any[]) => {
     const dirExists = await RNFS.exists(exportDir);
     if (!dirExists) await RNFS.mkdir(exportDir);
 
-    // 2️⃣ Generate file path
+    // 3️⃣ Generate file path with timestamp
     const dateStr = new Date().toISOString().replace(/[:.]/g, '-');
-    const fileName = `daily_report_${dateStr}.xlsx`;
+    const fileName = `${baseName}_${dateStr}.xlsx`;
     const filePath = `${exportDir}/${fileName}`;
-    
+
+    // 4️⃣ Request Android storage permission
     if (Platform.OS === 'android') {
-    const hasPermission = await requestStoragePermission();
-    if (!hasPermission) {
-      Alert.alert('Permission Denied', 'Cannot save file without storage permission.');
-    return;
-  }
-}
+      const hasPermission = await requestStoragePermission();
+      if (!hasPermission) {
+        Alert.alert('Permission Denied', 'Cannot save file without storage permission.');
+        return;
+      }
+    }
 
-
-    // 3️⃣ Convert data to Excel
+    // 5️⃣ Convert data to Excel
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Report');
     const wbout = XLSX.write(wb, { type: 'binary', bookType: 'xlsx' });
     await RNFS.writeFile(filePath, wbout, 'ascii');
 
-    // 4️⃣ Notify user
+    // 6️⃣ Scan file (helps Files app index it on real devices)
+    if (Platform.OS === 'android' && RNFS.scanFile) {
+      await RNFS.scanFile(filePath).catch(() => {});
+    }
+
+    // 7️⃣ Notify user
     Alert.alert(
       'File Saved Successfully',
       `Your Excel report has been saved to:\n${filePath}`,
@@ -231,7 +250,7 @@ const renderRow = ({ item }: any) => (
         )}
       </ScrollView>
 
-      <TouchableOpacity style={styles.exportButton} onPress={() => onExport(rows)}>
+      <TouchableOpacity style={styles.exportButton} onPress={() => onExport(rows, view)}>
       <Text style={styles.exportText}>Export to Excel</Text>
       </TouchableOpacity>
 
