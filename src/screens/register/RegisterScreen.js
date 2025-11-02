@@ -22,6 +22,7 @@ const RegisterScreen = ({ navigation }) => {
   const [signOutTime, setSignOutTime] = useState('');
   const [showSignInPicker, setShowSignInPicker] = useState(false);
   const [showSignOutPicker, setShowSignOutPicker] = useState(false);
+  const [hourlyWage, setHourlyWage] = useState('');
 
   const handleRegister = async () => {
   if (!employeeId || !name || !designation || !role) {
@@ -31,10 +32,11 @@ const RegisterScreen = ({ navigation }) => {
 
   try {
     await executeQuery(
-      `INSERT INTO employees (employee_id, name, designation, role, default_sign_in_time, default_sign_out_time)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [employeeId, name, designation, role, signInTime, signOutTime]
-    );
+  `INSERT INTO employees 
+   (employee_id, name, designation, role, default_sign_in_time, default_sign_out_time, hourly_wage)
+   VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  [employeeId, name, designation, role, signInTime, signOutTime, hourlyWage ?? 0]
+);
     Alert.alert('Success', `${name} has been registered successfully!`);
     navigation.navigate('Login');
   } catch (error) {

@@ -9,6 +9,30 @@ import {
   Alert,
 } from 'react-native';
 import { executeQuery } from '../../database/attendanceDB';
+import XLSX from 'xlsx';
+import Share from 'react-native-share';
+import RNFS from 'react-native-fs';import { Platform } from 'react-native';
+import { PermissionsAndroid } from 'react-native';
+
+async function requestStoragePermission() {
+  try {
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+      {
+        title: 'Storage Permission',
+        message: 'App needs access to your storage to save reports',
+        buttonNeutral: 'Ask Me Later',
+        buttonNegative: 'Cancel',
+        buttonPositive: 'OK',
+      },
+    );
+    return granted === PermissionsAndroid.RESULTS.GRANTED;
+  } catch (err) {
+    console.warn(err);
+    return false;
+  }
+}
+
 
 type ViewKey = 'employees' | 'daily' | 'payroll';
 
@@ -96,11 +120,57 @@ const ReportsScreen = () => {
       ? 'Daily Report'
       : 'Payroll';
 
-  const onExport = () => {
-    Alert.alert('Export Feature', 'Export to Excel is not yet implemented.');
-  };
+const onExport = async (rows: any[]) => {
+  try {
+    if (!rows || rows.length === 0) {
+      Alert.alert('No Data', 'There are no records to export.');
+      return;
+    }
 
-  const renderRow = ({ item }: any) => (
+    // 1️⃣ Ensure export folder exists
+    const exportDir =
+      Platform.OS === 'android'
+        ? `${RNFS.DownloadDirectoryPath}/AttendanceApp`
+        : `${RNFS.DocumentDirectoryPath}/AttendanceApp`;
+
+    const dirExists = await RNFS.exists(exportDir);
+    if (!dirExists) await RNFS.mkdir(exportDir);
+
+    // 2️⃣ Generate file path
+    const dateStr = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `daily_report_${dateStr}.xlsx`;
+    const filePath = `${exportDir}/${fileName}`;
+    
+    if (Platform.OS === 'android') {
+    const hasPermission = await requestStoragePermission();
+    if (!hasPermission) {
+      Alert.alert('Permission Denied', 'Cannot save file without storage permission.');
+    return;
+  }
+}
+
+
+    // 3️⃣ Convert data to Excel
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Report');
+    const wbout = XLSX.write(wb, { type: 'binary', bookType: 'xlsx' });
+    await RNFS.writeFile(filePath, wbout, 'ascii');
+
+    // 4️⃣ Notify user
+    Alert.alert(
+      'File Saved Successfully',
+      `Your Excel report has been saved to:\n${filePath}`,
+      [{ text: 'OK' }]
+    );
+  } catch (error) {
+    console.error('Export error:', error);
+    Alert.alert('Error', 'Failed to export or save the file.');
+  }
+};
+
+
+const renderRow = ({ item }: any) => (
     <View style={styles.row}>
       {columns.map((c) => (
         <View key={c} style={styles.cell}>
@@ -161,9 +231,10 @@ const ReportsScreen = () => {
         )}
       </ScrollView>
 
-      <TouchableOpacity style={styles.exportButton} onPress={onExport}>
-        <Text style={styles.exportText}>Export to Excel</Text>
+      <TouchableOpacity style={styles.exportButton} onPress={() => onExport(rows)}>
+      <Text style={styles.exportText}>Export to Excel</Text>
       </TouchableOpacity>
+
     </View>
   );
 };
