@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { executeQuery } from '../../database/attendanceDB';
 import XLSX from 'xlsx';
-import Share from 'react-native-share';
 import RNFS from 'react-native-fs';import { Platform } from 'react-native';
 import { PermissionsAndroid } from 'react-native';
 
