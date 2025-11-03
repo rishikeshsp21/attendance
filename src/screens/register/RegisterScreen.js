@@ -35,7 +35,7 @@ const RegisterScreen = ({ navigation }) => {
   `INSERT INTO employees 
    (employee_id, name, designation, role, default_sign_in_time, default_sign_out_time, hourly_wage)
    VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  [employeeId, name, designation, role, signInTime, signOutTime, hourlyWage ?? 0]
+  [employeeId, name, designation, role, signInTime, signOutTime, parseFloat(hourlyWage) || 0]
 );
     Alert.alert('Success', `${name} has been registered successfully!`);
     navigation.navigate('Login');
@@ -154,7 +154,16 @@ const RegisterScreen = ({ navigation }) => {
             if (selectedDate) setSignOutTime(formatTime(selectedDate));
           }}
         />
+        
       )}
+      <Text style={styles.label}>Hourly wage</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Hourly wage"
+        value={hourlyWage}
+        onChangeText={setHourlyWage}
+        keyboardType="numeric"  // ✅ limits input to numbers
+      />
 
       {/* Buttons */}
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
