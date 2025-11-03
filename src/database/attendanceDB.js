@@ -50,8 +50,6 @@ export const initializeDatabase = () => {
       `CREATE TABLE IF NOT EXISTS payroll (
         employee_id TEXT,
         name TEXT,
-        phone_number TEXT,
-        email_address TEXT,
         total_hours_worked_for_month REAL,
         hourly_wage REAL,
         salary REAL,
