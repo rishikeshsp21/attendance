@@ -18,7 +18,6 @@ export const initializeDatabase = () => {
         default_sign_in_time TEXT,
         default_sign_out_time TEXT,
         hourly_wage REAL DEFAULT 0,
-        total_hours_worked_for_month REAL DEFAULT 0
       );`,
       [],
       () => console.log('✅ Employees table ready'),
@@ -50,10 +49,10 @@ export const initializeDatabase = () => {
       `CREATE TABLE IF NOT EXISTS payroll (
         employee_id TEXT,
         name TEXT,
-        total_hours_worked_for_month REAL,
-        hourly_wage REAL,
-        salary REAL,
         month TEXT
+        total_hours_worked_for_month REAL DEFAULT 0,
+        hourly_wage REAL DEFAULT 0,
+        salary REAL DEFAULT 0,
       );`,
       [],
       () => console.log('✅ Payroll table ready'),
