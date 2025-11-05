@@ -140,6 +140,36 @@ const LoginScreen = ({ navigation }: any) => {
                      WHERE employee_id = ? AND date = ?`,
                     [signOutRaw, hoursWorked, overtime, employeeId, currentDate]
                   );
+                  // Calculate the new totals
+                  const month = new Date().toISOString().slice(0, 7);
+
+                  // Step 1: Get current total hours and wage
+                  const result = await executeQuery(
+                    `SELECT total_hours_worked_for_month, hourly_wage 
+                    FROM payroll 
+                    WHERE employee_id = ? AND month = ?`,
+                    [employeeId, month]
+                  );
+
+                  let totalHoursWorked = 0;
+                  let hourlyWage = 0;
+
+                  if (result.rows.length > 0) {
+                    totalHoursWorked = result.rows.item(0).total_hours_worked_for_month || 0;
+                    hourlyWage = result.rows.item(0).hourly_wage || 0;
+                  }
+
+                  // Step 2: Update totals
+                  const updatedTotal = totalHoursWorked + hoursWorked;
+                  const salary = updatedTotal * hourlyWage;
+
+                  await executeQuery(
+                    `UPDATE payroll 
+                    SET total_hours_worked_for_month = ?, salary = ?
+                    WHERE employee_id = ? AND month = ?`,
+                    [updatedTotal, salary, employeeId, month]
+                  );
+
 
                   setSignedIn(false);
                   Alert.alert('Signed Out', `You have signed out successfully, ${employee.name}`);

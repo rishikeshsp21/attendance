@@ -6,8 +6,8 @@ const db = SQLite.openDatabase('attendance.db', '1.0', 'Attendance Management Da
 // ✅ Initialize all tables
 export const initializeDatabase = () => {
   db.transaction((tx) => {
-    tx.executeSql('DROP TABLE IF EXISTS employees'); 
-    console.log("removed old daily employees table");
+    // tx.executeSql('DROP TABLE IF EXISTS employees'); 
+    // console.log("removed old daily employees table");
     tx.executeSql(
       `CREATE TABLE IF NOT EXISTS employees (
         employee_id TEXT PRIMARY KEY,
@@ -17,15 +17,15 @@ export const initializeDatabase = () => {
         face_embeddings TEXT,
         default_sign_in_time TEXT,
         default_sign_out_time TEXT,
-        hourly_wage REAL DEFAULT 0,
+        hourly_wage REAL DEFAULT 0
       );`,
       [],
       () => console.log('✅ Employees table ready'),
       (_, error) => console.error('❌ Error creating employees table:', error)
     );
 
-    tx.executeSql('DROP TABLE IF EXISTS daily_reports'); 
-    console.log("removed old daily reports table");
+    // tx.executeSql('DROP TABLE IF EXISTS daily_reports'); 
+    // console.log("removed old daily reports table");
     tx.executeSql(
       `CREATE TABLE IF NOT EXISTS daily_reports (
         employee_id TEXT,
@@ -43,16 +43,16 @@ export const initializeDatabase = () => {
       (_, error) => console.error('❌ Error creating daily_reports table:', error)
     );
 
-    tx.executeSql('DROP TABLE IF EXISTS payroll'); 
-    console.log("removed old daily payroll table");
+    // tx.executeSql('DROP TABLE IF EXISTS payroll'); 
+    // console.log("removed old daily payroll table");
     tx.executeSql(
       `CREATE TABLE IF NOT EXISTS payroll (
         employee_id TEXT,
         name TEXT,
-        month TEXT
+        month TEXT,
         total_hours_worked_for_month REAL DEFAULT 0,
         hourly_wage REAL DEFAULT 0,
-        salary REAL DEFAULT 0,
+        salary REAL DEFAULT 0
       );`,
       [],
       () => console.log('✅ Payroll table ready'),
