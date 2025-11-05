@@ -37,6 +37,13 @@ const RegisterScreen = ({ navigation }) => {
    VALUES (?, ?, ?, ?, ?, ?, ?)`,
   [employeeId, name, designation, role, signInTime, signOutTime, parseFloat(hourlyWage) || 0]
 );
+const month = new Date().toISOString().slice(0, 7); // YYYY-MM
+await executeQuery(
+  `INSERT INTO payroll 
+   (employee_id, name, month, total_hours_worked_for_month, hourly_wage, salary)
+   VALUES (?, ?, ?, ?, ?, ?)`,
+  [employeeId, name, month, 0, parseFloat(hourlyWage) || 0, 0]
+);
     Alert.alert('Success', `${name} has been registered successfully!`);
     navigation.navigate('Login');
   } catch (error) {

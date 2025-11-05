@@ -6,8 +6,8 @@ const db = SQLite.openDatabase('attendance.db', '1.0', 'Attendance Management Da
 // ✅ Initialize all tables
 export const initializeDatabase = () => {
   db.transaction((tx) => {
-    // tx.executeSql('DROP TABLE IF EXISTS employees'); 
-    // console.log("removed old daily employees table");
+    tx.executeSql('DROP TABLE IF EXISTS employees'); 
+    console.log("removed old daily employees table");
     tx.executeSql(
       `CREATE TABLE IF NOT EXISTS employees (
         employee_id TEXT PRIMARY KEY,
@@ -24,8 +24,8 @@ export const initializeDatabase = () => {
       (_, error) => console.error('❌ Error creating employees table:', error)
     );
 
-    // tx.executeSql('DROP TABLE IF EXISTS daily_reports'); 
-    // console.log("removed old daily reports table");
+    tx.executeSql('DROP TABLE IF EXISTS daily_reports'); 
+    console.log("removed old daily reports table");
     tx.executeSql(
       `CREATE TABLE IF NOT EXISTS daily_reports (
         employee_id TEXT,
@@ -43,8 +43,8 @@ export const initializeDatabase = () => {
       (_, error) => console.error('❌ Error creating daily_reports table:', error)
     );
 
-    // tx.executeSql('DROP TABLE IF EXISTS payroll'); 
-    // console.log("removed old daily payroll table");
+    tx.executeSql('DROP TABLE IF EXISTS payroll'); 
+    console.log("removed old daily payroll table");
     tx.executeSql(
       `CREATE TABLE IF NOT EXISTS payroll (
         employee_id TEXT,
