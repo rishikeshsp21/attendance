@@ -12,6 +12,16 @@ import {
 import { executeQuery } from '../../database/attendanceDB';
 import XLSX from 'xlsx';
 import RNFS from 'react-native-fs';
+import { Modal, TextInput, ScrollView } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Picker } from '@react-native-picker/picker';
+const [showSignInPicker, setShowSignInPicker] = useState(false);
+  const [showSignOutPicker, setShowSignOutPicker] = useState(false);
+const formatTime = (date: any) => {
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
 
 
 type ViewKey = 'employees' | 'daily' | 'payroll';
@@ -23,6 +33,7 @@ interface Employee {
   role: string;
   default_sign_in_time?: string;
   default_sign_out_time?: string;
+  hourly_wage?: number;
 }
 
 interface DailyReport {
@@ -174,31 +185,56 @@ const DashboardScreen = () => {
     }
   };
 
-  const handleEdit = (employee: Employee) => {
-    Alert.prompt(
-      'Edit Employee',
-      `Editing record for ${employee.name}`,
-      async (newName) => {
-        if (!newName) return;
-        try {
-          await executeQuery(
-            `UPDATE employees SET name = ? WHERE employee_id = ?`,
-            [newName, employee.employee_id]
-          );
-          Alert.alert('Updated', 'Employee record updated successfully.');
-          const updated = await executeQuery('SELECT * FROM employees');
-          const updatedData: Employee[] = [];
-          for (let i = 0; i < updated.rows.length; i++) {
-            updatedData.push(updated.rows.item(i));
-          }
-          setEmployees(updatedData);
-        } catch (err) {
-          console.error('Error updating employee:', err);
-          Alert.alert('Error', 'Failed to update employee.');
-        }
-      }
+const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+const [editVisible, setEditVisible] = useState(false);
+
+const handleEdit = (employee: Employee) => {
+  setSelectedEmployee(employee);
+  setEditVisible(true);
+};
+
+const handleSaveEdit = async () => {
+  if (!selectedEmployee) return;
+  const {
+    employee_id,
+    name,
+    designation,
+    role,
+    default_sign_in_time,
+    default_sign_out_time,
+    hourly_wage,
+  } = selectedEmployee;
+
+  try {
+    await executeQuery(
+      `UPDATE employees 
+       SET name = ?, designation = ?, role = ?, default_sign_in_time = ?, 
+           default_sign_out_time = ?, hourly_wage = ?
+       WHERE employee_id = ?`,
+      [
+        name,
+        designation,
+        role,
+        default_sign_in_time,
+        default_sign_out_time,
+        hourly_wage ?? 0,
+        employee_id,
+      ]
     );
-  };
+
+    Alert.alert('Success', 'Employee updated successfully!');
+    setEditVisible(false);
+
+    // refresh list
+    const e = await executeQuery('SELECT * FROM employees');
+    const updated: Employee[] = [];
+    for (let i = 0; i < e.rows.length; i++) updated.push(e.rows.item(i));
+    setEmployees(updated);
+  } catch (err) {
+    console.error('Error updating employee:', err);
+    Alert.alert('Error', 'Failed to update employee.');
+  }
+};
 
   const handleDelete = async (employeeId: string) => {
     Alert.alert('Confirm Delete', 'Are you sure you want to delete this employee?', [
@@ -278,6 +314,94 @@ const DashboardScreen = () => {
       <TouchableOpacity style={styles.exportButton} onPress={() => onExport(rows, view)}>
         <Text style={styles.exportText}>Export to Excel</Text>
       </TouchableOpacity>
+
+      {/* Edit Employee Modal */}
+<Modal
+  visible={editVisible}
+  animationType="slide"
+  transparent={true}
+  onRequestClose={() => setEditVisible(false)}>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContainer}>
+      <Text style={styles.modalTitle}>Edit Employee</Text>
+      <ScrollView>
+        <Text style={styles.label}>Name</Text>
+        <TextInput
+          style={styles.input}
+          value={selectedEmployee?.name}
+          onChangeText={(text) =>
+            setSelectedEmployee((prev) => (prev ? { ...prev, name: text } : prev))
+          }
+          placeholder="Name"
+        />
+
+        <Text style={styles.label}>Designation</Text>
+        <TextInput
+          style={styles.input}
+          value={selectedEmployee?.designation}
+          onChangeText={(text) =>
+            setSelectedEmployee((prev) => (prev ? { ...prev, designation: text } : prev))
+          }
+          placeholder="Designation"
+        />
+
+        <Text style={styles.label}>Role</Text>
+        <View style={styles.pickerContainer}>
+        <Text style={styles.label}>Select Role:</Text>
+        <View style={styles.pickerWrapper}>
+          <Picker
+            selectedValue={selectedEmployee?.role || 'Employee'}
+            onValueChange={(itemValue) =>
+              setSelectedEmployee((prev) => (prev ? { ...prev, role: itemValue } : prev))
+            }
+          >
+            <Picker.Item label="Employee" value="Employee" />
+            <Picker.Item label="Manager" value="Manager" />
+            <Picker.Item label="Supervisor" value="Supervisor" />
+          </Picker>
+        </View>
+      </View>
+
+      <Text style={styles.label}>Sign in Time</Text> 
+      <TextInput style={styles.input} 
+      value={selectedEmployee?.default_sign_in_time} 
+      onChangeText={(text) => setSelectedEmployee((prev) => (prev ? 
+        { ...prev, default_sign_in_time: text } : prev)) } placeholder="Default Sign In Time (HH:mm)" 
+        />
+
+        <Text style={styles.label}>Sign out Time</Text> 
+      <TextInput style={styles.input} 
+      value={selectedEmployee?.default_sign_in_time} 
+      onChangeText={(text) => setSelectedEmployee((prev) => (prev ? 
+        { ...prev, default_sign_in_time: text } : prev)) } placeholder="Default Sign In Time (HH:mm)" 
+        />
+        <Text style={styles.label}>Hourly wage</Text>
+        <TextInput
+          style={styles.input}
+          keyboardType="numeric"
+          value={selectedEmployee?.hourly_wage?.toString()}
+          onChangeText={(text) =>
+            setSelectedEmployee((prev) => (prev ? { ...prev, hourly_wage: parseFloat(text) || 0 } : prev))
+          }
+          placeholder="Hourly Wage"
+        />
+      </ScrollView>
+
+      <View style={styles.modalButtons}>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSaveEdit}>
+          <Text style={styles.modalButtonText}>Save</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={() => setEditVisible(false)}>
+          <Text style={styles.modalButtonText}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+
+
     </View>
   );
 };
@@ -373,5 +497,68 @@ const styles = StyleSheet.create({
   exportText: {
     color: '#fff',
     fontWeight: '600',
+  },
+
+  modalOverlay: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: 'rgba(0,0,0,0.5)',
+},
+modalContainer: {
+  backgroundColor: '#fff',
+  width: '90%',
+  borderRadius: 10,
+  padding: 20,
+  maxHeight: '85%',
+},
+modalTitle: {
+  fontSize: 20,
+  fontWeight: 'bold',
+  marginBottom: 10,
+  textAlign: 'center',
+},
+input: {
+  borderWidth: 1,
+  borderColor: '#ccc',
+  borderRadius: 8,
+  padding: 10,
+  marginBottom: 10,
+},
+modalButtons: {
+  flexDirection: 'row',
+  justifyContent: 'space-around',
+  marginTop: 10,
+},
+saveButton: {
+  backgroundColor: '#007bff',
+  paddingVertical: 10,
+  paddingHorizontal: 20,
+  borderRadius: 8,
+},
+cancelButton: {
+  backgroundColor: '#6c757d',
+  paddingVertical: 10,
+  paddingHorizontal: 20,
+  borderRadius: 8,
+},
+modalButtonText: {
+  color: '#fff',
+  fontWeight: '600',
+},
+label: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  pickerContainer: {
+    marginBottom: 15,
+  },
+  pickerWrapper: {
+    borderWidth: 1,
+    borderColor: '#aaa',
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#f9f9f9',
   },
 });
