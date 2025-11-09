@@ -12,6 +12,10 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { executeQuery } from '../../database/attendanceDB';
+import * as tf from '@tensorflow/tfjs';
+import '@tensorflow/tfjs-react-native';
+import * as faceapi from 'face-api.js';
+import { bundleResourceIO } from '@tensorflow/tfjs-react-native';
 
 const RegisterScreen = ({ navigation }) => {
   const [employeeId, setEmployeeId] = useState('');
