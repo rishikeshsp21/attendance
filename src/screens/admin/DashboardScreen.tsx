@@ -15,8 +15,6 @@ import RNFS from 'react-native-fs';
 import { Modal, TextInput, ScrollView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
-const [showSignInPicker, setShowSignInPicker] = useState(false);
-  const [showSignOutPicker, setShowSignOutPicker] = useState(false);
 const formatTime = (date: any) => {
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
@@ -78,6 +76,8 @@ const DashboardScreen = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [daily, setDaily] = useState<DailyReport[]>([]);
   const [payroll, setPayroll] = useState<PayrollRecord[]>([]);
+  const [showSignInPicker, setShowSignInPicker] = useState(false);
+  const [showSignOutPicker, setShowSignOutPicker] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -362,19 +362,67 @@ const handleSaveEdit = async () => {
         </View>
       </View>
 
-      <Text style={styles.label}>Sign in Time</Text> 
-      <TextInput style={styles.input} 
-      value={selectedEmployee?.default_sign_in_time} 
-      onChangeText={(text) => setSelectedEmployee((prev) => (prev ? 
-        { ...prev, default_sign_in_time: text } : prev)) } placeholder="Default Sign In Time (HH:mm)" 
-        />
+<Text style={styles.label}>Default Sign-In Time</Text>
+<TouchableOpacity
+  style={styles.input}
+  onPress={() => setShowSignInPicker(true)}
+>
+  <Text>
+    {selectedEmployee?.default_sign_in_time
+      ? `Default Sign-In Time: ${selectedEmployee.default_sign_in_time}`
+      : 'Select Default Sign-In Time'}
+  </Text>
+</TouchableOpacity>
 
-        <Text style={styles.label}>Sign out Time</Text> 
-      <TextInput style={styles.input} 
-      value={selectedEmployee?.default_sign_in_time} 
-      onChangeText={(text) => setSelectedEmployee((prev) => (prev ? 
-        { ...prev, default_sign_in_time: text } : prev)) } placeholder="Default Sign In Time (HH:mm)" 
-        />
+{showSignInPicker && (
+  <DateTimePicker
+    value={new Date()}
+    mode="time"
+    is24Hour={true}
+    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+    onChange={(event, selectedDate) => {
+      setShowSignInPicker(false);
+      if (selectedDate) {
+        const formattedTime = formatTime(selectedDate);
+        setSelectedEmployee((prev) =>
+          prev ? { ...prev, default_sign_in_time: formattedTime } : prev
+        );
+      }
+    }}
+  />
+)}
+
+<Text style={styles.label}>Default Sign-Out Time</Text>
+<TouchableOpacity
+  style={styles.input}
+  onPress={() => setShowSignOutPicker(true)}
+>
+  <Text>
+    {selectedEmployee?.default_sign_out_time
+      ? `Default Sign-Out Time: ${selectedEmployee.default_sign_out_time}`
+      : 'Select Default Sign-Out Time'}
+  </Text>
+</TouchableOpacity>
+
+{showSignOutPicker && (
+  <DateTimePicker
+    value={new Date()}
+    mode="time"
+    is24Hour={true}
+    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+    onChange={(event, selectedDate) => {
+      setShowSignOutPicker(false);
+      if (selectedDate) {
+        const formattedTime = formatTime(selectedDate);
+        setSelectedEmployee((prev) =>
+          prev ? { ...prev, default_sign_out_time: formattedTime } : prev
+        );
+      }
+    }}
+  />
+)}
+
+
         <Text style={styles.label}>Hourly wage</Text>
         <TextInput
           style={styles.input}
