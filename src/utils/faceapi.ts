@@ -4,13 +4,13 @@ import * as faceapi from 'face-api.js';
 import { bundleResourceIO } from '@tensorflow/tfjs-react-native';
 
 const ssdJson = require('../assets/models/ssd_mobilenetv1_model-weights_manifest.json');
-const ssdWeights = [require('../assets/models/ssd_mobilenetv1_model-shard1')];
+const ssdWeights = [require('../assets/models/ssd_mobilenetv1_model-shard1.bin')];
 
 const landmarkJson = require('../assets/models/face_landmark_68_model-weights_manifest.json');
-const landmarkWeights = [require('../assets/models/face_landmark_68_model-shard1')];
+const landmarkWeights = [require('../assets/models/face_landmark_68_model-shard1.bin')];
 
 const recognitionJson = require('../assets/models/face_recognition_model-weights_manifest.json');
-const recognitionWeights = [require('../assets/models/face_recognition_model-shard1')];
+const recognitionWeights = [require('../assets/models/face_recognition_model-shard1.bin')];
 
 export async function loadModels() {
   await tf.ready();
