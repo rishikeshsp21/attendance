@@ -1,44 +1,58 @@
 import * as tf from '@tensorflow/tfjs';
-import '@tensorflow/tfjs-react-native';
 import * as faceapi from 'face-api.js';
-import { bundleResourceIO } from '@tensorflow/tfjs-react-native';
+import RNFS from 'react-native-fs';
+import { Platform } from 'react-native';
 
-const ssdJson = require('../assets/models/ssd_mobilenetv1_model-weights_manifest.json');
-const ssdWeights = [require('../assets/models/ssd_mobilenetv1_model-shard1.bin'), require('../assets/models/ssd_mobilenetv1_model-shard2.bin')];
-// console.log('ssdJson:', ssdJson);
-// console.log('ssdWeights:', ssdWeights);
+const MODEL_DIR = `${RNFS.DocumentDirectoryPath}/models`;
 
-const landmarkJson = require('../assets/models/face_landmark_68_model-weights_manifest.json');
-const landmarkWeights = [require('../assets/models/face_landmark_68_model-shard1.bin')];
-// console.log('landmarkJson:', landmarkJson);
-// console.log('landmarkWeights:', landmarkWeights);
+async function copyAssetToFile(assetName: string) {
+  const destPath = `${MODEL_DIR}/${assetName}`;
+  const exists = await RNFS.exists(destPath);
+  if (exists) return destPath;
 
-const recognitionJson = require('../assets/models/face_recognition_model-weights_manifest.json');
-const recognitionWeights = [require('../assets/models/face_recognition_model-shard1.bin'), require('../assets/models/face_recognition_model-shard2.bin')];
-// console.log('recognitionJson:', ssdJson);
-// console.log('recognitionWeights:', ssdWeights);
+  try {
+    if (Platform.OS === 'android') {
+      const data = await RNFS.readFileAssets(`models/${assetName}`, 'base64');
+      await RNFS.writeFile(destPath, data, 'base64');
+    } else {
+      const src = `${RNFS.MainBundlePath}/models/${assetName}`;
+      await RNFS.copyFile(src, destPath);
+    }
+    console.log(`✅ Copied: ${assetName}`);
+  } catch (err) {
+    console.error(`❌ Failed to copy ${assetName}:`, err);
+  }
+
+  return destPath;
+}
 
 export async function loadModels() {
   try {
-    console.log('⏳ Initializing TensorFlow...');
-    await tf.ready();
-
-    // ✅ Force CPU backend to avoid GPU/Expo issues
     await tf.setBackend('cpu');
     await tf.ready();
 
-    console.log('🧠 Loading face-api models...');
+    if (!(await RNFS.exists(MODEL_DIR))) {
+      await RNFS.mkdir(MODEL_DIR);
+    }
 
-    const ssdModel = await tf.loadGraphModel(bundleResourceIO(ssdJson, ssdWeights));
-    (faceapi.nets.ssdMobilenetv1 as any).setModel(ssdModel);
+    const files = [
+      'ssd_mobilenetv1_model-weights_manifest.json',
+      'ssd_mobilenetv1_model-shard1.bin',
+      'ssd_mobilenetv1_model-shard2.bin',
+      'face_landmark_68_model-weights_manifest.json',
+      'face_landmark_68_model-shard1.bin',
+      'face_recognition_model-weights_manifest.json',
+      'face_recognition_model-shard1.bin',
+      'face_recognition_model-shard2.bin',
+    ];
 
-    const landmarkModel = await tf.loadGraphModel(bundleResourceIO(landmarkJson, landmarkWeights));
-    (faceapi.nets.faceLandmark68Net as any).setModel(landmarkModel);
+    for (const file of files) await copyAssetToFile(file);
 
-    const recognitionModel = await tf.loadGraphModel(bundleResourceIO(recognitionJson, recognitionWeights));
-    (faceapi.nets.faceRecognitionNet as any).setModel(recognitionModel);
+    await faceapi.nets.ssdMobilenetv1.loadFromDisk(MODEL_DIR);
+    await faceapi.nets.faceLandmark68Net.loadFromDisk(MODEL_DIR);
+    await faceapi.nets.faceRecognitionNet.loadFromDisk(MODEL_DIR);
 
-    console.log('✅ Models loaded successfully using CPU backend.');
+    console.log('✅ All models loaded!');
   } catch (error) {
     console.error('❌ Error loading face-api models:', error);
   }
