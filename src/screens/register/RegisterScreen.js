@@ -177,6 +177,10 @@ await executeQuery(
       />
 
       {/* Buttons */}
+      {/* <TouchableOpacity style={styles.button} onPress={}>
+        <Text style={styles.buttonText}>capture face</Text>
+      </TouchableOpacity> */}
+      
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Text style={styles.buttonText}>Save</Text>
       </TouchableOpacity>

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import AppNavigator from './src/navigation/AppNavigator';
 import { initializeDatabase } from './src/database/attendanceDB'; // 👈 import the init function
-import { loadModels } from './src/utils/faceapi'; // 👈 import the loadModels function
+import { loadArcFaceModel } from './src/utils/loadmodels';
 const App = () => {
   useEffect(() => {
     // Run once when the app starts
@@ -9,7 +9,7 @@ const App = () => {
   }, []);
   useEffect(() => {
   (async () => {
-    await loadModels();
+    await loadArcFaceModel();
   })();
 }, []);
   return <AppNavigator />;
