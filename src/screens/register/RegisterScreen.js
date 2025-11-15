@@ -33,9 +33,9 @@ const RegisterScreen = ({ navigation }) => {
   try {
     await executeQuery(
   `INSERT INTO employees 
-   (employee_id, name, designation, role, default_sign_in_time, default_sign_out_time, hourly_wage)
-   VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  [employeeId, name, designation, role, signInTime, signOutTime, parseFloat(hourlyWage) || 0]
+   (employee_id, name, designation, role, face_embeddings, default_sign_in_time, default_sign_out_time, hourly_wage)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  [employeeId, name, designation, role, face_embeddings, signInTime, signOutTime, parseFloat(hourlyWage) || 0]
 );
 const month = new Date().toISOString().slice(0, 7); // YYYY-MM
 await executeQuery(

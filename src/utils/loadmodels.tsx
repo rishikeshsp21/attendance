@@ -2,6 +2,8 @@ import RNFS from "react-native-fs";
 import * as ort from "onnxruntime-react-native";
 import { Platform } from "react-native";
 
+export let arcfaceSession: ort.InferenceSession | null = null;
+
 export async function loadArcFaceModel() {
   try {
     const modelName = "arcfaceresnet100-11-int8.onnx";
@@ -16,16 +18,16 @@ export async function loadArcFaceModel() {
 
       console.log("⏳ Loading ArcFace model from:", destPath);
 
-      const session = await ort.InferenceSession.create(destPath);
+      arcfaceSession = await ort.InferenceSession.create(destPath);
 
       console.log("✅ ArcFace Model Loaded!");
-      return session;
+      return arcfaceSession;
     }
 
-    // ----- iOS (later if needed) -----
-    const session = await ort.InferenceSession.create(modelName);
+    // iOS handling
+    arcfaceSession = await ort.InferenceSession.create(modelName);
     console.log("✅ ArcFace Model Loaded on iOS!");
-    return session;
+    return arcfaceSession;
 
   } catch (err) {
     console.error("❌ Error loading ArcFace model:", err);
