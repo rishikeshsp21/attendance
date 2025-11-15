@@ -2,46 +2,71 @@ import ImageEditor from "@react-native-community/image-editor";
 import RNFS from "react-native-fs";
 import { Buffer } from "buffer";
 import { Tensor } from "onnxruntime-react-native";
-import { arcfaceSession } from "./loadmodels";
-import jpeg from "jpeg-js";
+import * as ort from "onnxruntime-react-native";
+import { Platform } from "react-native";
+
+export let arcfaceSession: ort.InferenceSession | null = null;
 
 /**
- * Resize → Decode → Normalize → ONNX Tensor
+ * Load ArcFace model into ONNX Runtime
+ */
+export async function loadArcFaceModel() {
+  try {
+    const modelName = "arcfaceresnet100-11-int8.onnx";
+
+    if (Platform.OS === "android") {
+      const assetPath = `models/${modelName}`;
+      const destPath = `${RNFS.DocumentDirectoryPath}/${modelName}`;
+
+      console.log("⏳ Copying ArcFace model from assets:", assetPath);
+      await RNFS.copyFileAssets(assetPath, destPath);
+
+      console.log("⏳ Loading ArcFace model from:", destPath);
+      arcfaceSession = await ort.InferenceSession.create(destPath);
+
+      console.log("✅ ArcFace Model Loaded!");
+      return arcfaceSession;
+    }
+
+    // iOS
+    arcfaceSession = await ort.InferenceSession.create(modelName);
+    console.log("✅ ArcFace Model Loaded (iOS)");
+    return arcfaceSession;
+
+  } catch (err) {
+    console.error("❌ Error loading ArcFace model:", err);
+    throw err;
+  }
+}
+
+/**
+ * Preprocess → Resize to 112×112 → Convert to ArcFace tensor
  */
 export async function preprocess(imagePath: string): Promise<Tensor> {
   // 1. Resize to 112x112
-  const result = await ImageEditor.cropImage(imagePath, {
-    offset: { x: 0, y: 0 },
-    size: { width: 112, height: 112 },
-    displaySize: { width: 112, height: 112 },
-    resizeMode: "contain",
-  });
+const resized = await ImageEditor.cropImage(imagePath, {
+  offset: { x: 0, y: 0 },
+  size: { width: 112, height: 112 },
+  displaySize: { width: 112, height: 112 },
+  resizeMode: "contain",
+});
 
-  const resizedPath = result.uri.replace("file://", "");
+// resized = { uri: "file://...", width: 112, height: 112 }
+const cleanedPath = resized.uri.replace("file://", "");
 
-  // 2. Read file → base64 decode
-  const base64 = await RNFS.readFile(resizedPath, "base64");
-  const jpegBuffer = Buffer.from(base64, "base64");
+// 2. Read file
+const base64Data = await RNFS.readFile(cleanedPath, "base64");
+  const jpegBuffer = Buffer.from(base64Data, "base64");
 
-  // 3. Decode JPEG → RGB bytes
-  const raw = jpeg.decode(jpegBuffer, { useTArray: true });
+  const raw = decodeJPEG(jpegBuffer);
 
-  if (!raw || !raw.data) {
-    throw new Error("JPEG decode failed");
-  }
-
-  if (raw.width !== 112 || raw.height !== 112) {
-    throw new Error(`Expected 112x112, got ${raw.width}x${raw.height}`);
-  }
-
-  // 4. ArcFace normalization (-1 to 1), CHW order
   const floatArray = new Float32Array(3 * 112 * 112);
-
   let idx = 0;
+
   for (let c = 0; c < 3; c++) {
-    for (let i = 0; i < 112 * 112; i++) {
-      const pixel = raw.data[i * 3 + c];
-      floatArray[idx++] = pixel / 127.5 - 1.0;
+    for (let i = 0; i < raw.width * raw.height; i++) {
+      const px = raw.data[i * 3 + c];
+      floatArray[idx++] = px / 127.5 - 1.0;
     }
   }
 
@@ -49,7 +74,7 @@ export async function preprocess(imagePath: string): Promise<Tensor> {
 }
 
 /**
- * Run ArcFace model → return 512-dim embedding
+ * Run ArcFace → Generate 512-d embedding
  */
 export async function runArcFaceEmbedding(imagePath: string): Promise<number[]> {
   if (!arcfaceSession) {
@@ -59,7 +84,15 @@ export async function runArcFaceEmbedding(imagePath: string): Promise<number[]> 
   const inputTensor = await preprocess(imagePath);
   const output = await arcfaceSession.run({ input: inputTensor });
 
-  const tensor = output["output"] ?? Object.values(output)[0];
+  const embeddingTensor = output["output"] ?? Object.values(output)[0];
 
-  return Array.from(tensor.data as Float32Array);
+  return Array.from(embeddingTensor.data as Float32Array);
+}
+
+/**
+ * JPEG decoder
+ */
+function decodeJPEG(buffer: Buffer): { width: number; height: number; data: Uint8Array } {
+  const jpeg = require("jpeg-js");
+  return jpeg.decode(buffer, { useTArray: true });
 }

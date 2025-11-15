@@ -31,10 +31,10 @@ export default function FaceCaptureScreen() {
       setIsProcessing(true);
 
       // 1. TAKE PHOTO
-      const photo: PhotoFile = await camera.current.takePhoto({
-        quality: 90,
-        skipMetadata: true,
+      const photo = await camera.current.takePhoto({
+      flash: "off",
       });
+
 
       // 2. RUN ARC FACE
       const embedding = await runArcFaceEmbedding(photo.path);
@@ -65,14 +65,14 @@ export default function FaceCaptureScreen() {
     <View style={styles.container}>
       {/* CAMERA VIEW */}
       <Camera
-        ref={camera}
-        style={StyleSheet.absoluteFill}
-        device={device}
-        isActive
-        photo={true}
-        frameProcessor={frameProcessor}
-        frameProcessorFps={5}
-      />
+  ref={camera}
+  style={StyleSheet.absoluteFill}
+  device={device}
+  isActive={true}
+  photo={true}
+  frameProcessor={frameProcessor}
+  />
+
 
       {/* STATUS OVERLAY */}
       <View style={styles.overlay}>
