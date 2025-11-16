@@ -4,7 +4,7 @@ import { Camera, useCameraDevice } from "react-native-vision-camera";
 import type { PhotoFile } from "react-native-vision-camera";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { runArcFaceEmbedding } from "../utils/arcface"; 
-import { useFaceDetection } from "../frameprocessors/useFaceDetection";
+import { useFaceDetection } from "../frameprocessors/usefacedetection";
 
 export default function FaceCaptureScreen() {
   const navigation = useNavigation();

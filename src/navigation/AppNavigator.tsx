@@ -5,13 +5,17 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from '../screens/auth/LoginScreen';
 import DashboardScreen from '../screens/admin/DashboardScreen';
 import RegisterScreen from '../screens/register/RegisterScreen';
-
+import FaceCaptureScreen from '../screens/facecapturescreen';
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   Dashboard: undefined;
   EditEmployee: undefined;
+  FaceCapture: {
+    onCaptured: (embeddingString: string) => void;
+  };
 };
+
 
 
 
@@ -36,6 +40,12 @@ const AppNavigator = () => {
           component={DashboardScreen}
           options={{ title: 'Admin Dashboard' }}
         />
+        <Stack.Screen
+          name="FaceCapture"
+          component={FaceCaptureScreen}
+          options={{ headerShown: false }}
+        />
+
       </Stack.Navigator>
     </NavigationContainer>
   );

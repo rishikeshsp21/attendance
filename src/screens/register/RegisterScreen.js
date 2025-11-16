@@ -23,6 +23,7 @@ const RegisterScreen = ({ navigation }) => {
   const [showSignInPicker, setShowSignInPicker] = useState(false);
   const [showSignOutPicker, setShowSignOutPicker] = useState(false);
   const [hourlyWage, setHourlyWage] = useState('');
+  const [face_embeddings, setFaceEmbeddings] = useState('');
 
   const handleRegister = async () => {
   if (!employeeId || !name || !designation || !role) {
@@ -173,9 +174,20 @@ await executeQuery(
       />
 
       {/* Buttons */}
-      {/* <TouchableOpacity style={styles.button} onPress={}>
-        <Text style={styles.buttonText}>capture face</Text>
-      </TouchableOpacity> */}
+      <TouchableOpacity
+      style={styles.button}
+      onPress={() => {
+      navigation.navigate("FaceCapture", {
+      onCaptured: (embeddingString) => {
+      console.log("📌 Embedding returned:", embeddingString);
+      setFaceEmbeddings(embeddingString);
+          }
+        });
+      }}
+    >
+  <Text style={styles.buttonText}>Capture Face</Text>
+</TouchableOpacity>
+
       
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Text style={styles.buttonText}>Save</Text>
