@@ -1,15 +1,17 @@
-// src/frameprocessors/useFaceDetection.ts
-import { useFrameProcessor } from 'react-native-vision-camera';
-import { runOnJS } from 'react-native-reanimated';
-import type { Frame } from 'react-native-vision-camera';
+// import { useFrameProcessor } from "react-native-vision-camera";
+// import { useRunOnJS } from "react-native-worklets-core";
+// import CallbackStore from "../navigation/Jcallbacks";
 
-export function useFaceDetection(onTriggerPhoto: () => void) {
-  return useFrameProcessor((frame: Frame) => {
-    'worklet';
+// export function useFaceDetection() {
+//   const runOnJS = useRunOnJS();
 
-    // Simple trigger condition (replace with actual logic later)
-    if (frame.width > 0) {
-      runOnJS(onTriggerPhoto)();
-    }
-  }, []);
-}
+//   return useFrameProcessor((frame) => {
+//     "worklet";
+
+//     if (frame.width > 0) {
+//       runOnJS(() => {
+//         CallbackStore.onFaceCaptured?.();
+//       })();
+//     }
+//   }, []);
+// }

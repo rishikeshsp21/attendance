@@ -11,13 +11,8 @@ export type RootStackParamList = {
   Register: undefined;
   Dashboard: undefined;
   EditEmployee: undefined;
-  FaceCapture: {
-    onCaptured: (embeddingString: string) => void;
-  };
+  FaceCapture: undefined;
 };
-
-
-
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
